@@ -1,0 +1,23 @@
+= form_with model: @product, url: products_update_path(@product), method: :post do |form|
+  = form.label :name
+  = form.text_field :name
+  %br
+  %br
+  = form.label :price
+  = form.number_field :price
+  %br
+  %br
+  = form.label :quantity
+  = form.number_field :quantity
+  %br
+  %br
+  = form.label :description
+  = form.text_area :description
+  %br
+  %br
+  = form.radio_button :is_deleted, true , :checked => @product.is_deleted == true
+  = form.label :is_deleted, "Disable"
+  = form.radio_button :is_deleted, false, :checked => @product.is_deleted == false
+  = form.label :is_deleted, "Enable", :value => false
+  %br
+  = form.submit "Update"
