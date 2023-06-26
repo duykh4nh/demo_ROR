@@ -17,7 +17,7 @@ class ProductsController < ApplicationController
     product.price = params[:price]
     product.description = params[:description]
     product.quantity = params[:quantity]
-    product.is_deleted = 0
+    product.is_deleted = params[:quantity].present? ? params[:quantity] : 0
     product.save
     redirect_to(index_path)
   end
@@ -32,22 +32,16 @@ class ProductsController < ApplicationController
     updated_price = params[:price]
     updated_quantity = params[:quantity]
     updated_description = params[:description]
+    updated_is_deleted = params[:is_deleted]
 
     product.update(
       name: updated_name,
       price: updated_price,
       quantity: updated_quantity,
-      description: updated_description
+      description: updated_description,
+      is_deleted: updated_is_deleted
     )
 
-    render json: { message: 'Successfully' }
-  end
-
-  def update_is_deleted_product_use_ajax
-    product = Product.find(params[:id])
-    product.update(
-      is_deleted: params[:is_deleted]
-    )
     render json: { message: 'Successfully' }
   end
 end

@@ -62,16 +62,19 @@ addRow = () ->
 
   selectInput = document.createElement("select")
   selectInput.classList.add("form-control")
+  selectInput.id = "is_deleted";
 
   option1 = document.createElement("option")
   option1.value = "false"
+  option1.classList.add("option")
   option1.text = "ON"
 
   option2 = document.createElement("option")
   option2.value = "true"
+  option2.classList.add("option")
   option2.text = "OFF"
 
-  option1.selected = true
+#  option1.selected = true
 
   selectInput.appendChild(option1)
   selectInput.appendChild(option2)
@@ -115,6 +118,7 @@ submitForm = (csrfToken) ->
   price = document.getElementById("newPrice").value
   quantity = document.getElementById("newQuantity").value
   description = document.getElementById("newDescription").value
+  is_deleted = document.getElementById("is_deleted").value
 
   # Create an object to hold the form data
   product = {
@@ -122,6 +126,7 @@ submitForm = (csrfToken) ->
     price: price,
     quantity: quantity,
     description: description
+    is_deleted: is_deleted
     authenticity_token: csrfToken
   }
 
@@ -129,6 +134,7 @@ submitForm = (csrfToken) ->
   console.log("price " + price)
   console.log("quantity " + quantity)
   console.log("description " + description)
+  console.log("is_deleted " + is_deleted)
 
   $.ajax({
     url: '/product',
@@ -147,20 +153,31 @@ replaceRowWithInputs = (row, prodId, csrfToken) ->
   price = row.find("td:nth-child(3)").text()
   quantity = row.find("td:nth-child(4)").text()
   description = row.find("td:nth-child(5)").text()
-  onoff = row.find("td:nth-child(5)").find("select").val()
+  onoff = row.find("td:nth-child(6)").text().trim()
 
-  status = onoff == "false" ? "ON" : "OFF"
-
+  onOption = "<option value='false' #{if onoff == 'ON' then 'selected' else ''}>ON</option>"
+  offOption = "<option value='true' #{if onoff == 'OFF' then 'selected' else ''}>OFF</option>"
+  selectHTML = "<select class='form-control'>#{onOption}#{offOption}</select>"
 
   row.html("<td>#{id}</td>" +
     "<td><input class='form-control' type='text' value='#{name}'></td>" +
     "<td><input class='form-control' type='number' value='#{price}'></td>" +
     "<td><input class='form-control' type='number' value='#{quantity}'></td>" +
     "<td><input class='form-control' type='text' value='#{description}'></td>" +
-    "<td><select class='form-control'><option value='false'>ON</option><option value='true'>OFF</option></select></td>" +
+    "<td>#{selectHTML}</td>" +
     "<td style='text-align: center'>" +
     "<input class='btn btn-success btn-sm btn-after-update' type='button' value='Update'>" +
     "</td>")
+
+#  row.html("<td>#{id}</td>" +
+#    "<td><input class='form-control' type='text' value='#{name}'></td>" +
+#    "<td><input class='form-control' type='number' value='#{price}'></td>" +
+#    "<td><input class='form-control' type='number' value='#{quantity}'></td>" +
+#    "<td><input class='form-control' type='text' value='#{description}'></td>" +
+#    "<td><select class='form-control'><option value='false' #{status == 'ON' ? 'selected' : ''}>ON</option><option value='true' #{status == 'OFF' ? 'selected' : ''}>OFF</option></select></td>" +
+#    "<td style='text-align: center'>" +
+#    "<input class='btn btn-success btn-sm btn-after-update' type='button' value='Update'>" +
+#    "</td>")
 
   row.find(".btn-after-update").on "click", ->
     updatedName = row.find("td:nth-child(2) input").val()
@@ -169,21 +186,20 @@ replaceRowWithInputs = (row, prodId, csrfToken) ->
     updatedDescription = row.find("td:nth-child(5) input").val()
     updatedStatus = row.find("td:nth-child(6)").find("select").val()
 
-    status = updatedStatus == "false" ? "ON" : "OFF"
-
+    status = if updatedStatus == "false" then "false" else "true"
+    console.log status
     product = {
       id: prodId,
       name: updatedName,
       price: updatedPrice,
       quantity: updatedQuantity,
       description: updatedDescription,
-      is_deleted: updatedStatus,
+      is_deleted: status,
       authenticity_token: csrfToken
     }
-    console.log(product)
-    debugger
+
     $.ajax({
-      url: "/update_product_ajax/#{prodId}",
+      url: "/update_product_ajax",
       method: "PUT",
       data: product,
       success: (response) ->
