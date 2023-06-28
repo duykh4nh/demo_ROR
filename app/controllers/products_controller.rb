@@ -2,46 +2,29 @@ class ProductsController < ApplicationController
   def index
     @products = Product.all
   end
-  def new
-    @products = Product.new
-  end
-  def edit
-    @product = Product.find(params[:id])
+  def detail
+    product = Product.find(params[:id])
+    respond_to do |format|
+      format.json { render json: product }
+    end
   end
   def save
-    if params[:id].present?
-      return update
-    end
     product = Product.new
     product.name = params[:name]
     product.price = params[:price]
     product.description = params[:description]
     product.quantity = params[:quantity]
-    product.is_deleted = params[:quantity].present? ? params[:quantity] : 0
+    product.is_deleted = params[:is_deleted].present? ? params[:is_deleted] : 0
     product.save
-    redirect_to(index_path)
-  end
-  def update
-    @product = Product.find_by(id: params[:id])
-    form_params = params.require(:product).permit(:name, :price, :description, :quantity, :is_deleted)
-    @product.update(form_params) ? redirect_to(index_path) : render(:update)
   end
   def update_product_use_ajax
     product = Product.find(params[:id])
-    updated_name = params[:name]
-    updated_price = params[:price]
-    updated_quantity = params[:quantity]
-    updated_description = params[:description]
-    updated_is_deleted = params[:is_deleted]
-
     product.update(
-      name: updated_name,
-      price: updated_price,
-      quantity: updated_quantity,
-      description: updated_description,
-      is_deleted: updated_is_deleted
+      name: params[:name],
+      price: params[:price],
+      quantity: params[:quantity],
+      description: params[:description],
+      is_deleted: params[:is_deleted]
     )
-
-    render json: { message: 'Successfully' }
   end
 end

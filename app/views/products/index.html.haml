@@ -1,12 +1,19 @@
 = javascript_include_tag "application"
 = stylesheet_link_tag "application"
-%link{:href => "https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css", :rel => "stylesheet"}
-%script{:src => "https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"}
-= hidden_field_tag "product_list" , @products.to_json
+%script{src: "https://cdn.jsdelivr.net/npm/sweetalert2@11.1.4/dist/sweetalert2.min.js"}
+%link{href: "https://cdn.jsdelivr.net/npm/sweetalert2@11.1.4/dist/sweetalert2.min.css", rel: "stylesheet"}
+%script{src: "https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"}
+%link{href: "https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css", rel: "stylesheet"}
+%script{src: "https://unpkg.com/xlsx/dist/xlsx.full.min.js"}
+%script{src: "https://unpkg.com/file-saver/dist/FileSaver.min.js"}
 .container
   .row
     .col-md-12
-      %h1 Products
+      %h1 Lists all products
+      %button#btnExportExcel.btn.btn-info{type: "button"}
+        Export to Excel
+      -# %button#btnExportPdf.btn.btn-danger{type: "button"}
+      -#   Export to PDF
       %p
       %table#myTable.table.table-hover.table-striped.table-bordered
         %thead
@@ -22,11 +29,12 @@
           - @products.each_with_index do |prod, index|
             %tr
               %td= index + 1
-              %td= prod.name
+              %td.view-product{:id => "#{prod.id}"}
+                = prod.name
               %td= prod.price
               %td= prod.quantity
               %td= prod.description
-              %td
+              %td.text-center
                 %span{:class => (prod.is_deleted == true ? 'off' : 'on')}= (prod.is_deleted == true ? "OFF" : "ON")
               %td{:style => "text-align: center"}
                 %input.btn.btn-warning.btn-sm.btn-before-update{:type => "button", :value => "Update", :id => "#{prod.id}"}

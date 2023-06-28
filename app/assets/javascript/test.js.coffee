@@ -1,7 +1,10 @@
 $ ->
+  $('#btnExportExcel').on 'click', ->
+    exportToExcel()
+
+  $('#myTable').DataTable()
   $("#btnNew").on "click" , ()->
     addRow()
-
   $("#myTable").on "click", ".btn-before-update", (event) ->
     csrfToken = $('meta[name="csrf-token"]').attr('content')
     prodId = $(event.target).attr('id')
@@ -10,6 +13,28 @@ $ ->
 
   $("#btnDelete").on "click", ->
     deleteRow(newRow)
+
+  $("#myTable").on "click", ".view-product", (event) ->
+    productId = $(event.target).closest("tr").find(".btn-before-update").attr("id")
+    $.ajax
+      url: "/product_detail/"
+      method: "GET"
+      data:
+        id: productId
+      success: (response) ->
+        Swal.fire
+          title: response.name
+          html: """
+            <p><strong>Price:</strong> #{response.price}</p>
+            <p><strong>Quantity:</strong> #{response.quantity}</p>
+            <p><strong>Description:</strong> #{response.description}</p>
+          """
+          icon: "info"
+          confirmButtonText: "Close"
+          customClass:
+            container: 'larger-swal'
+      error: (xhr, status, error) ->
+        console.log "Failed:", error
 
 addRow = () ->
   table = document.getElementById("myTable")
@@ -120,6 +145,25 @@ submitForm = (csrfToken) ->
   description = document.getElementById("newDescription").value
   is_deleted = document.getElementById("is_deleted").value
 
+  name = sanitizeString(name)
+
+  # Validate the input fields
+  if name.trim() == ''
+    alert("Please enter a name.")
+    return
+
+  if price.trim() == ''
+    alert("Please enter a price.")
+    return
+
+  if quantity.trim() == ''
+    alert("Please enter a quantity.")
+    return
+
+  if description.trim() == ''
+    alert("Please enter a description.")
+    return
+
   # Create an object to hold the form data
   product = {
     name: name,
@@ -141,11 +185,18 @@ submitForm = (csrfToken) ->
     method: "POST",
     data: product,
     success: () ->
-      location.reload()
+      Swal.fire({
+        title: "Product created successfully.!",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false
+      }).then(() -> location.reload())
   },
     error: (xhr, status, error) ->
       console.log("Failed:", error)
   )
+sanitizeString = (inputString) ->
+  return inputString.replace(/[^\w\s]/gi, '')
 
 replaceRowWithInputs = (row, prodId, csrfToken) ->
   id = row.find("td:nth-child(1)").text()
@@ -169,16 +220,6 @@ replaceRowWithInputs = (row, prodId, csrfToken) ->
     "<input class='btn btn-success btn-sm btn-after-update' type='button' value='Update'>" +
     "</td>")
 
-#  row.html("<td>#{id}</td>" +
-#    "<td><input class='form-control' type='text' value='#{name}'></td>" +
-#    "<td><input class='form-control' type='number' value='#{price}'></td>" +
-#    "<td><input class='form-control' type='number' value='#{quantity}'></td>" +
-#    "<td><input class='form-control' type='text' value='#{description}'></td>" +
-#    "<td><select class='form-control'><option value='false' #{status == 'ON' ? 'selected' : ''}>ON</option><option value='true' #{status == 'OFF' ? 'selected' : ''}>OFF</option></select></td>" +
-#    "<td style='text-align: center'>" +
-#    "<input class='btn btn-success btn-sm btn-after-update' type='button' value='Update'>" +
-#    "</td>")
-
   row.find(".btn-after-update").on "click", ->
     updatedName = row.find("td:nth-child(2) input").val()
     updatedPrice = row.find("td:nth-child(3) input").val()
@@ -197,16 +238,21 @@ replaceRowWithInputs = (row, prodId, csrfToken) ->
       is_deleted: status,
       authenticity_token: csrfToken
     }
-
     $.ajax({
-      url: "/update_product_ajax",
+      url: '/update_product_ajax',
       method: "PUT",
       data: product,
-      success: (response) ->
-        location.reload()
+      success: () ->
+        Swal.fire({
+          title: "Product updated successfully.!",
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() -> location.reload())
+    },
       error: (xhr, status, error) ->
         console.log("Failed:", error)
-    })
+    )
 
 getMaxID = () ->
   maxID = 0
@@ -220,17 +266,25 @@ getMaxID = () ->
 
   return maxID
 
-update_is_deleted_product = (is_checked, product_id) ->
-  console.log('LOGGGGGGGGGGGGG')
-  debugger
-  $.ajax
-    url: "/update_is_deleted_product_ajax/#{product_id}"
-    method: 'PUT'
-    data:
-      id: product_id
-      is_deleted: if is_checked then 0 else 1
-    success: (response) ->
-      console.log('Product updated is_deleted successfully')
-      location.reload()
-    error: (xhr, status, error) ->
-      console.log('Product updated is_deleted failed: ', error)
+exportToExcel = () ->
+  table = document.getElementById("myTable")
+  if table
+    clonedTable = table.cloneNode(true)
+    columnHeader = clonedTable.querySelector("th:nth-child(1)")
+    if columnHeader
+      columnHeader.textContent = "STT"
+    rows = clonedTable.getElementsByTagName("tr")
+    for row in rows
+      cells = row.getElementsByTagName("td")
+      if cells.length > 0
+        cells[cells.length - 1].remove()
+        cells[cells.length - 1].remove()
+    wb = XLSX.utils.table_to_book(clonedTable)
+    wbout = XLSX.write(wb, { bookType: 'xlsx', bookSST: true, type: 'binary' })
+    s2ab = (s) ->
+      buf = new ArrayBuffer(s.length)
+      view = new Uint8Array(buf)
+      for i in [0..s.length - 1]
+        view[i] = s.charCodeAt(i) & 0xFF
+      buf
+    saveAs(new Blob([s2ab(wbout)], { type: "application/octet-stream" }), "table.xlsx")
